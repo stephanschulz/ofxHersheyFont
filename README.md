@@ -7,7 +7,9 @@ Best to be used if you want to carve/engrave text with machines like CNC-routers
 ![preview](img/preview.jpg)
 
 ## Supported platforms
-Tested on Windows 8, OF 0.9.3.
+Tested on:
+- Windows 8, OF 0.9.3.
+- macOS 10.15.7, OF 0.11.0
 
 Should work on other platforms as well.
 
