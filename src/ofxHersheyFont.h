@@ -26,26 +26,45 @@ public:
         draw(stringValue, x, y, scale, centered, 0);
     }
     void draw(string stringValue, float x, float y, float scale, bool centered, float angle);
+    void drawSpecial(string stringValue, float xPos, float yPos, float scale, bool centered, float angle);
+    
+    //    void drawResampled(string stringValue, float x, float y, float scale, bool centered, float angle, float _resampleSpacing);
+    ofColor color;
     void setColor(ofColor c);
-    float getWidth(string stringValue, float scale);
-    float getHeight(float scale);
+    //    glm::vec2 getDimensions(string stringValue, float scale);
+    ofRectangle getBoundingBox(string stringValue, float scale, glm::vec2 pos = glm::vec2(0,0));
+    
+    float getHeight(string stringValue,float scale);
+    float getWidth(string stringValue,float scale);
+    float getLineHeight(float scale);
+    
     ofPath getPath(string stringValue, float scale, int yFlip = -1){
         return getPath(stringValue, 0, 0, scale, yFlip);
     };
-    ofPath getPath(string stringValue, float xPos, float yPos, float scale, int yFlip = -1);
+    //    ofPath getPath(string stringValue, float xPos, float yPos, float scale, int yFlip = -1){
+    //        return getPath(stringValue, xPos, yPos, scale, -1, yFlip);
+    //    }
+    ofPath getPath(string stringValue, float x, float y, float scale, int yFlip = -1);
+    ofPath getPathSpecial(string stringValue, float x, float y, float scale, int yFlip = -1);
     
-  
-    filesystem::path fontPath;
-    string fontName;
-    
-    ofColor color;
-    
-    //stephan
     string getPath_asPythonString(string stringValue, string prefix, float xPos, float yPos, float scale, int yFlip = -1);
  
+   
+    
     ofXml svgFontFile;
     void loadSVGFont(filesystem::path _fontPath);
 
+    filesystem::path fontPath;
+    string fontName;
+    string currentPhrase;
+    float currentScale;
+    ofRectangle boundingBox;
+    ofParameter<string> delimiter; // = "\n";
+    
+    ofParameter<float> resampleSpacing = 0;
+    ofParameter<int> smoothingSize = 0;
+    ofParameter<float> smoothingShape = 0;
+    
 private:
     void drawChar(ofXml xmlElement);
 };
