@@ -39,6 +39,22 @@ void ofxHersheyFont::loadSVGFont(filesystem::path _fontPath){
         ofLog()<<"unable to load "<<fontPath<<" check data/ folder";
     }
     
+    currentScale = 1;
+    currentPhrase = "";
+    
+    getTallestChar(tallestChar,tallestChar_height);
+    
+    //calc line height based on letter I
+    //some letters go in to the negative because the font aesthetic/design requires it so 
+    //that's why we should not use the tallest letter as line height
+
+    ofPath charPath = getPath("I",1);
+    ofPolyline charPolyline;
+    for(auto & aLine : charPath.getOutline()){
+        charPolyline.addVertices(aLine.getVertices());
+    }
+    lineHeight = charPolyline.getBoundingBox().getHeight();
+    lineHeight *= 1.4; //https://banc.digital/blog/typography-font-sizes-styles-formats/#:~:text=For%20the%20optimal%20readability%20and,pt%20(180%25)%20maximum%20value.
 }
 
 //--------------------------------------------------------------
@@ -82,15 +98,32 @@ void ofxHersheyFont::setColor(ofColor c) {
     color = c;
 }
 
+//ofRectangle ofxHersheyFont::getBoundingBox(string stringValue){
+//    return boundingBox;
+//}
 //--------------------------------------------------------------
 ofRectangle ofxHersheyFont::getBoundingBox(string stringValue, float scale, glm::vec2 pos){
     
-    if(currentPhrase != stringValue || boundingBox.getPosition() != glm::vec3(pos.x,pos.y,0) || currentScale != scale){
+    //|| boundingBox.getPosition() != glm::vec3(pos.x,pos.y,0)
+    if(currentPhrase != stringValue  || currentScale != scale){
         currentPhrase = stringValue;
         currentScale = scale;
         
-        ofLog()<<"getBoundingBox() scale:"<<scale;
+//        ofLog()<<"getBoundingBox() currentPhrase:"<<currentPhrase<<" stringValue "<<stringValue;
+//        ofLog()<<"getBoundingBox() currentScale:"<<currentScale<<" scale "<<scale;
+//        ofLog()<<"getBoundingBox() boundingBox.getPosition():"<<boundingBox.getPosition()<<" pos "<<pos;
         
+        ofPath phrasePath = getPathSpecial(stringValue, pos.x, pos.y, scale);
+        vector<ofPolyline> phrasePolylines = phrasePath.getOutline();
+
+        for(int i=0; i<phrasePolylines.size(); i++){
+            ofRectangle temp_bb;
+            temp_bb = phrasePolylines[i].getBoundingBox();
+            if(i == 0) boundingBox = temp_bb;
+            else boundingBox.growToInclude(temp_bb);
+        }
+        
+        /*
         float stringWidth = 0;
         float stringHeight = 0;
         float lineHeight = getLineHeight(scale);
@@ -122,9 +155,11 @@ ofRectangle ofxHersheyFont::getBoundingBox(string stringValue, float scale, glm:
                 stringWidth = temp_width;
             }
         }
+      
         
         boundingBox = ofRectangle(pos.x, pos.y, stringWidth, stringHeight);
-        ofLog()<<"boundingBox "<<boundingBox;
+         */
+//        ofLog()<<"boundingBox "<<boundingBox;
     }
     
     return boundingBox;
@@ -139,21 +174,62 @@ float ofxHersheyFont::getHeight(string stringValue,float scale) {
 }
 //--------------------------------------------------------------
 float ofxHersheyFont::getLineHeight(float scale) {
-    //the height of a capital letter is 21px (scale 1)
-    
-//    ofLog()<<"ofxHersheyFont::getHeight()";
-    
-    ofPath charPath = getPath("I",scale);
-//    ofLog()<<"charPath.getOutline() "<<charPath.getOutline().size();
-    ofPolyline charPolyline;
-    for(auto & aLine : charPath.getOutline()){
-        charPolyline.addVertices(aLine.getVertices());
-    }
-    float stringHeight = charPolyline.getBoundingBox().getHeight();
-    
-    return stringHeight;
+    //some letters go in to the negative because the font aesthetic/design requires it so 
+    //that's why we should not use the tallest letter as line height
+    return lineHeight * scale;
 }
 
+void ofxHersheyFont::getTallestChar(string & _bestChar, float & _bestHeight){
+    
+    _bestHeight = 0;
+    _bestChar = "I";
+    string curChar = "";
+    
+    auto glyphXml = svgFontFile.find("/svg/defs/font/glyph");
+    ofLog()<<"getTallestChar() glyphXml "<<glyphXml.size();
+    for(auto & xmlElement: glyphXml){
+//        ofLog()<<xmlElement ; //.getValue();
+//        cout<<"unicode "<<xmlElement.getAttribute("unicode").getValue()<<" , "<<endl;
+        cout<<xmlElement.getAttribute("unicode").getValue()<<" , "; 
+//        cout<<"glyph-name "<<glyphElement.getAttribute("glyph-name").getValue()<<" "<<endl;
+//        cout<<"horiz-adv-x "<<glyphElement.getAttribute("horiz-adv-x").getValue()<<" "<<endl;
+//        cout<<"d "<<glyphElement.getAttribute("d").getValue()<<" "<<endl;
+               
+        
+//        string elementPath = "/svg/defs/font/glyph[@unicode='"+curChar+"']";
+        
+//        ofXml xmlElement = svgFontFile.findFirst(elementPath);
+        
+        float charWidth = ofToFloat(xmlElement.getAttribute("horiz-adv-x").getValue());
+        
+        vector<string> splitGlyphPath = ofSplitString(xmlElement.getAttribute("d").getValue(), " ");//glyph path data in SVG looks like this: "M 139 -9.45 L 230 18.9 L 299 22.1 L 227 25.2"
+        
+        float minY = INT_MAX;
+        float maxY = 0;
+        float temp_height = 0;
+        if(splitGlyphPath.size() > 2){
+            for(int i=0; i<splitGlyphPath.size(); i+=3){
+                if(splitGlyphPath[i] == "M" || splitGlyphPath[i] == "L"){
+//                    minY = glm::min(minY,ofToFloat(splitGlyphPath[i+2]));
+                    maxY = glm::max(maxY,ofToFloat(splitGlyphPath[i+2]));
+                }
+                //        if(splitGlyphPath[i] == "M"){
+                //            charPath.moveTo(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ yFlip * ofToFloat(splitGlyphPath[i+2])* scale);
+                //        }else if(splitGlyphPath[i] == "L"){
+                //            charPath.lineTo(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ yFlip * ofToFloat(splitGlyphPath[i+2])* scale);
+                //        }
+            }
+            temp_height = maxY; // - minY;
+            if(temp_height > _bestHeight){
+                _bestHeight = temp_height;
+                _bestChar = xmlElement.getAttribute("unicode").getValue();
+            }
+        }
+        
+    }
+    
+    ofLog()<<"getTallestChar() _bestChar "<<_bestChar<<" _bestHeight "<<_bestHeight;
+}
 //--------------------------------------------------------------
 ofPath ofxHersheyFont::getPath(string stringValue, float x, float y, float scale, int yFlip){
 
@@ -163,7 +239,9 @@ ofPath ofxHersheyFont::getPath(string stringValue, float x, float y, float scale
     for (int i = 0; i < stringValue.size(); i++)
     {
     
-        string nextChar = ofToString(stringValue.at(i));
+        string nextChar = ofUTF8Substring(stringValue, i, 1);  //ofToString(stringValue.at(i));
+        if(nextChar.length() == 0) continue; //skip empty char which somehow ö has
+        
         string elementPath = "/svg/defs/font/glyph[@unicode='"+nextChar+"']";
         
         if(svgFontFile.findFirst(elementPath) == 0 ){
@@ -201,8 +279,9 @@ ofPath ofxHersheyFont::getPath(string stringValue, float x, float y, float scale
 //-----------------------
 ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, float scale, int yFlip){
 
-//    ofLog()<<"getPath scale "<<scale<<" _resampleSpacing "<<_resampleSpacing;
-
+    ofLog()<<"getPathSpecial scale "<<scale;
+    ofLog()<<"stringValue "<<stringValue<<"| size "<<stringValue.size();
+    
     float start_x = x;
     bool singlePath = true;
     
@@ -214,13 +293,18 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
     for (int i = 0; i < stringValue.size(); i++)
     {
     
-        string nextChar = ofToString(stringValue.at(i));
+//        string nextChar = stringValue.substr (i,1); //stringValue.at(i);
+        string nextChar = ofUTF8Substring(stringValue, i, 1);
+//        ofLog()<<"nextChar.length "<<nextChar.length();
+        if(nextChar.length() == 0) continue; //skip empty char which somehow ö has
         
+//        string nextChar = ofToString(stringValue.at(i));
+        ofLog()<<"nextChar "<<nextChar;
         bool firstLetterInWord = false;
         if(i == 0){
             firstLetterInWord = true;
         }else{
-            string prevChar = ofToString(stringValue.at(i-1));
+            string prevChar = ofUTF8Substring(stringValue, i-1, 1); //ofToString(stringValue.at(i-1));
             if(prevChar == "/" || prevChar == " ") firstLetterInWord = true;
         } 
         if(nextChar == "/"){
@@ -244,14 +328,15 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
         
         if(splitGlyphPath.size() > 1){
             
-           
+            
             for(int i=0; i<splitGlyphPath.size(); i+=3){
+                glm::vec2 newPoint = glm::vec2(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ (yFlip * ofToFloat(splitGlyphPath[i+2])* scale));
                 
                 if(firstLetterInWord == true){
                     firstLetterInWord = false;
-                    charPath.moveTo(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ yFlip * ofToFloat(splitGlyphPath[i+2])* scale);
+                    charPath.moveTo(newPoint.x,newPoint.y);
                 } else if(singlePath == true && i == 0 && firstLetterInWord == false){
-                    glm::vec2 newPoint = glm::vec2(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ yFlip * ofToFloat(splitGlyphPath[i+2])* scale);
+                    //                    glm::vec2 newPoint = glm::vec2(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ (yFlip * ofToFloat(splitGlyphPath[i+2])* scale));
                     if(distance(lastPoint,newPoint) > (charWidth*scale*0.5)){
                         charPath.moveTo(newPoint.x,newPoint.y);
                     } else {
@@ -260,13 +345,13 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
                     //                    charPath.lineTo(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ yFlip * ofToFloat(splitGlyphPath[i+2])* scale);
                 }else{
                     if(splitGlyphPath[i] == "M"){
-                        charPath.moveTo(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ yFlip * ofToFloat(splitGlyphPath[i+2])* scale);
+                        charPath.moveTo(newPoint.x,newPoint.y);
                     }else if(splitGlyphPath[i] == "L"){
-                        charPath.lineTo(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ yFlip * ofToFloat(splitGlyphPath[i+2])* scale);
+                        charPath.lineTo(newPoint.x,newPoint.y);
                     }
                 }
                 
-                lastPoint = glm::vec2(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ yFlip * ofToFloat(splitGlyphPath[i+2])* scale);
+                lastPoint = newPoint;
             }
         }
         x += (charWidth*scale);

@@ -32,11 +32,17 @@ public:
     ofColor color;
     void setColor(ofColor c);
     //    glm::vec2 getDimensions(string stringValue, float scale);
-    ofRectangle getBoundingBox(string stringValue, float scale, glm::vec2 pos = glm::vec2(0,0));
+    ofRectangle getBoundingBox(string stringValue, float scale = 1, glm::vec2 pos = glm::vec2(0,0));
     
     float getHeight(string stringValue,float scale);
     float getWidth(string stringValue,float scale);
+    
     float getLineHeight(float scale);
+    float lineHeight;
+    
+    string tallestChar;
+    float tallestChar_height;
+    void getTallestChar(string & _char, float & _height);
     
     ofPath getPath(string stringValue, float scale, int yFlip = -1){
         return getPath(stringValue, 0, 0, scale, yFlip);
