@@ -245,7 +245,7 @@ ofPath ofxHersheyFont::getPath(string stringValue, float x, float y, float scale
         string elementPath = "/svg/defs/font/glyph[@unicode='"+nextChar+"']";
         
         if(svgFontFile.findFirst(elementPath) == 0 ){
-            ofLog()<<"char "<<nextChar<<" not in svg replace with question mark";
+//            ofLog()<<"char "<<nextChar<<" not in svg replace with question mark";
             nextChar = "?";
             elementPath = "/svg/defs/font/glyph[@unicode='"+nextChar+"']";
         }
@@ -279,9 +279,10 @@ ofPath ofxHersheyFont::getPath(string stringValue, float x, float y, float scale
 //-----------------------
 ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, float scale, int yFlip){
 
-    ofLog()<<"getPathSpecial scale "<<scale;
-    ofLog()<<"stringValue "<<stringValue<<"| size "<<stringValue.size();
+//    ofLog()<<"getPathSpecial scale "<<scale;
+//    ofLog()<<"stringValue "<<stringValue<<"| size "<<stringValue.size();
     
+    //TODO: center all text lines
     float start_x = x;
     bool singlePath = true;
     
@@ -299,7 +300,7 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
         if(nextChar.length() == 0) continue; //skip empty char which somehow ö has
         
 //        string nextChar = ofToString(stringValue.at(i));
-        ofLog()<<"nextChar "<<nextChar;
+//        ofLog()<<"nextChar "<<nextChar;
         bool firstLetterInWord = false;
         if(i == 0){
             firstLetterInWord = true;
