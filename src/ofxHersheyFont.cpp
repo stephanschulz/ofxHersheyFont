@@ -331,7 +331,8 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
     //-------
     float start_x = x;
     ofPath charPath;
-        ofLog()<<"-------------lines.size() "<<lines.size();
+   
+//        ofLog()<<"-------------lines.size() "<<lines.size();
     //iterate through each character of the input string
     for (int l = 0; l < lines.size(); l++)
     {
@@ -343,12 +344,13 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
         //        ofLog()<<"lineWidths[l] "<<lineWidths[l];
         //        ofLog()<<"g-l "<<((greatestWidth - lineWidths[l])/2.0); 
         glm::vec2 lastPoint(x,y);
+        string lastChar = "lineStart";
         for (int c = 0; c < lines[l].size(); c++)
         {
            
             //loop through each letter in that line
             string nextChar = ofUTF8Substring(lines[l], c, 1);
-            ofLog()<<"++++++"<<nextChar<<"++++++++";
+//            ofLog()<<"++++++"<<nextChar<<"++++++++";
             if(nextChar.length() == 0) continue; //skip empty char which somehow ö has
             
             //            ofLog()<<l<<" lines[l].size() "<<lines[l].size()<<" nextChar "<<nextChar;
@@ -360,6 +362,7 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
             ofXml xmlElement;
             string elementPath;
             if(nextChar == "'" || nextChar == "&"){
+                //https://www.codetable.net/unicodecharacters
                 //handle special characters that don't work with svgFontFile.findFirst(elementPath)
                 auto glyphXml = svgFontFile.find("/svg/defs/font/glyph");
 //                ofLog()<<"glyphXml ";
@@ -391,39 +394,42 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
 
             
             if(nextChar == " "){
-                ofLog()<<"nextChar == space, charWidth "<<charWidth;
+//                ofLog()<<"nextChar == space, charWidth "<<charWidth;
                 x += (charWidth*scale);
+                lastChar = nextChar;
+//                lastPoint = glm::vec2(0,0);
                 continue;
+            }else{
+//                ofLog()<<"use nextChar == "<<nextChar;
             }
             
             string glyphData_str = xmlElement.getAttribute("d").getValue();
             
-            if(glyphData_str.length() == 0){
-                //https://www.codetable.net/unicodecharacters
-                ofLog()<<"try unicode hex code";
-                string charAsHex = "&#x"+ofToHex(nextChar)+";";
-                ofLog()<<"charAsHex:"<<charAsHex;
-                elementPath = "/svg/defs/font/glyph[@unicode='"+charAsHex+"']";
-                xmlElement = svgFontFile.findFirst(elementPath);
-                charWidth = ofToFloat(xmlElement.getAttribute("horiz-adv-x").getValue());
-                glyphData_str = xmlElement.getAttribute("d").getValue();
-            }
+//            if(glyphData_str.length() == 0){
+//                //https://www.codetable.net/unicodecharacters
+//                ofLog()<<"try unicode hex code";
+//                string charAsHex = "&#x"+ofToHex(nextChar)+";";
+//                ofLog()<<"charAsHex:"<<charAsHex;
+//                elementPath = "/svg/defs/font/glyph[@unicode='"+charAsHex+"']";
+//                xmlElement = svgFontFile.findFirst(elementPath);
+//                charWidth = ofToFloat(xmlElement.getAttribute("horiz-adv-x").getValue());
+//                glyphData_str = xmlElement.getAttribute("d").getValue();
+//            }
             
 //            ofLog()<<"nextChar "<<nextChar<<" charWidth "<<charWidth;
 //            ofLog()<<"nextChar "<<nextChar<<" int "<<ofToInt(nextChar)<<" hex "<<ofToHex(nextChar); //&#xc7;
 //            ofLog()<<"glyphData_str "<<glyphData_str;
 
-            
-           
+
             
             vector<string> splitGlyphPath = ofSplitString(glyphData_str, " ");//glyph path data in SVG looks like this: "M 139 -9.45 L 230 18.9 L 299 22.1 L 227 25.2"
             //            ofLog()<<l<<" charWidth "<<charWidth<<" splitGlyphPath "<<splitGlyphPath.size();
-            ofLog()<<"nextChar "<<nextChar<<" splitGlyphPath "<<splitGlyphPath.size()<<":"<<splitGlyphPath[0];
+//            ofLog()<<"nextChar "<<nextChar<<" splitGlyphPath "<<splitGlyphPath.size()<<":"<<splitGlyphPath[0];
             
             for(int i=0; i<splitGlyphPath.size(); i+=3){
                 glm::vec2 newPoint = glm::vec2(x+ofToFloat(splitGlyphPath[i+1])* scale, y+ (yFlip * ofToFloat(splitGlyphPath[i+2])* scale));
-                
-                if(c == 0 && i == 0){
+//                if(lastChar == " ") cout<<"SPACE";
+                if((i == 0 && c == 0) || (i == 0 && lastChar == " ")){
                     //first letter and first point in each is a moveto
                     charPath.moveTo(newPoint.x,newPoint.y);
                 } else if(singlePath == true && i == 0){
@@ -445,20 +451,18 @@ ofPath ofxHersheyFont::getPathSpecial(string stringValue, float x, float y, floa
                 }
                 
                 lastPoint = newPoint;
+                
             }//end for(int i=0; i<splitGlyphPath.size(); i+=3)
             x += (charWidth*scale);
             //            cout<<endl;
+            lastChar = nextChar;
         }//end  for (int c = 0; c < lines[l].size(); c++)
         
         y += getLineHeight(scale);
         
     }//end for (int l = 0; l < lines.size(); l++)
     
-    
-    
-    //TODO: make path per line and then offset based on line widths
-    
-    
+
     /*
      for (int i = 0; i < stringValue.size(); i++)
      {
